@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 
+	"golang.org/x/xerrors"
+
 	"gocloud.dev/blob"
 	_ "gocloud.dev/blob/gcsblob"
 )
@@ -20,9 +22,18 @@ func main() {
 
 	ctx := context.Background()
 
+	obj, err := getObject(ctx, bucketURL, file)
+	if err != nil {
+		log.Fatalf("Failed to getObject: %s", err)
+	}
+
+	fmt.Println(obj)
+}
+
+func getObject(ctx context.Context, bucketURL, file string) (string, error) {
 	bucket, err := blob.OpenBucket(ctx, bucketURL)
 	if err != nil {
-		log.Fatalf("Failed to setup bucket: %s", err)
+		return "", xerrors.Errorf("Failed to setup bucket: %w", err)
 	}
 	defer func() {
 		if err := bucket.Close(); err != nil {
@@ -32,8 +43,8 @@ func main() {
 
 	b, err := bucket.ReadAll(ctx, file)
 	if err != nil {
-		log.Fatalf("Failed to read file: %s", err)
+		return "", xerrors.Errorf("Failed to read file: %w", err)
 	}
 
-	fmt.Println(string(b))
+	return string(b), nil
 }
